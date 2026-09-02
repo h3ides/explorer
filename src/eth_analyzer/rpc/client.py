@@ -47,11 +47,23 @@ class JsonRpcClient:
         request = self.build_request(method, params)
         data = json.dumps(request).encode("utf-8")
         http_request = urllib.request.Request(
-            self.rpc_url, data=data, headers={"Content-Type": "application/json"}, method="POST"
+            self.rpc_url,
+            data=data,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "User-Agent": "eth-analyzer/0.1.0",
+            },
+            method="POST",
         )
         try:
             with urllib.request.urlopen(http_request, timeout=self.timeout) as response:
                 raw = response.read().decode("utf-8")
+        except urllib.error.HTTPError as exc:
+            raise RpcError(
+                f"JSON-RPC HTTP error from {method}: HTTP {exc.code} {exc.reason} "
+                f"(provider={self.provider_id})"
+            ) from exc
         except urllib.error.URLError as exc:
             raise RpcError(f"JSON-RPC transport error: {exc}") from exc
         try:
