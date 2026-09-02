@@ -4,14 +4,14 @@ from pathlib import Path
 from .contract import collect_contract, validate_address, validate_block_identifier
 from .rpc import JsonRpcClient, EthRpc
 from .treasury import TREASURY, collect_treasury, write_snapshot
-from .treasury_audit import collect_treasury_audit, write_treasury_audit
+from .treasury_audit import collect_treasury_audit, write_treasury_audit, DEFAULT_LOG_CHUNK_SIZE, DEFAULT_LOG_MAX_ATTEMPTS, DEFAULT_LOG_BACKOFF_SECONDS
 from .transaction import collect_transaction, write_transaction
 
 def build_parser():
     p=argparse.ArgumentParser(prog="eth-analyzer");sub=p.add_subparsers(dest="command",required=True)
     a=sub.add_parser("analyze");a.add_argument("contract_address");a.add_argument("--rpc-url",default=os.environ.get("ETH_ANALYZER_RPC_URL"));a.add_argument("--block",default="latest");a.add_argument("--output",default="analysis")
     t=sub.add_parser("treasury");t.add_argument("--address",default=TREASURY);t.add_argument("--rpc-url",default=os.environ.get("ETH_ANALYZER_RPC_URL"));t.add_argument("--block",default="latest");t.add_argument("--output",default="treasury.json")
-    ta=sub.add_parser("treasury-audit",help="Build a read-only historical treasury security/evidence report");ta.add_argument("--address",default=TREASURY);ta.add_argument("--rpc-url",default=os.environ.get("ETH_ANALYZER_RPC_URL"));ta.add_argument("--from-block",required=True);ta.add_argument("--to-block",required=True);ta.add_argument("--output",default="treasury-audit.json");ta.add_argument("--contribution-tx");ta.add_argument("--application-contract");ta.add_argument("--revert-selector");ta.add_argument("--pod-id")
+    ta=sub.add_parser("treasury-audit",help="Build a read-only historical treasury security/evidence report");ta.add_argument("--address",default=TREASURY);ta.add_argument("--rpc-url",default=os.environ.get("ETH_ANALYZER_RPC_URL"));ta.add_argument("--from-block",required=True);ta.add_argument("--to-block",required=True);ta.add_argument("--output",default="treasury-audit.json");ta.add_argument("--cache-path",help="Persistent successful eth_getLogs chunk cache; defaults to <output>.cache.json");ta.add_argument("--log-chunk-size",type=int,default=DEFAULT_LOG_CHUNK_SIZE);ta.add_argument("--log-max-attempts",type=int,default=DEFAULT_LOG_MAX_ATTEMPTS);ta.add_argument("--log-backoff-seconds",type=float,default=DEFAULT_LOG_BACKOFF_SECONDS);ta.add_argument("--contribution-tx");ta.add_argument("--application-contract");ta.add_argument("--revert-selector");ta.add_argument("--pod-id")
     x=sub.add_parser("transaction");x.add_argument("tx_hash");x.add_argument("--rpc-url",default=os.environ.get("ETH_ANALYZER_RPC_URL"));x.add_argument("--output",default="transaction.json")
     return p
 
@@ -24,7 +24,7 @@ def main(argv=None):
     elif args.command=="treasury":
         address=validate_address(args.address);block=validate_block_identifier(args.block);write_snapshot(collect_treasury(eth,address,block=block),args.output);print(args.output)
     elif args.command=="treasury-audit":
-        address=validate_address(args.address);audit=collect_treasury_audit(eth,address,args.from_block,args.to_block,contribution_tx=args.contribution_tx,application_contract=args.application_contract,revert_selector=args.revert_selector,pod_id=args.pod_id);write_treasury_audit(audit,args.output);print(args.output)
+        address=validate_address(args.address);cache_path=args.cache_path or args.output+".cache.json";audit=collect_treasury_audit(eth,address,args.from_block,args.to_block,contribution_tx=args.contribution_tx,application_contract=args.application_contract,revert_selector=args.revert_selector,pod_id=args.pod_id,cache_path=cache_path,log_chunk_size=args.log_chunk_size,log_max_attempts=args.log_max_attempts,log_backoff_seconds=args.log_backoff_seconds);write_treasury_audit(audit,args.output);print(args.output)
     elif args.command=="transaction":
         write_transaction(collect_transaction(eth,args.tx_hash),args.output);print(args.output)
     return 0
