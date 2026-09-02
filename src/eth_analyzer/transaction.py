@@ -17,7 +17,7 @@ KNOWN_SELECTORS = {
     "approve": "0x095ea7b3",
     "transferFrom": "0x23b872dd",
 }
-TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628a6f9b5a7f5f5d" 
+TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a9df523b3ef"
 
 
 @dataclass(frozen=True)
