@@ -5,6 +5,7 @@ from pathlib import Path
 from .contract import collect_contract, validate_address, validate_block_identifier
 from .rpc import JsonRpcClient, EthRpc
 from .treasury import TREASURY, collect_treasury, write_snapshot
+from .treasury_audit import collect_treasury_audit, write_treasury_audit
 from .transaction import collect_transaction, write_transaction
 
 
@@ -21,6 +22,12 @@ def build_parser():
     t.add_argument("--rpc-url", default=os.environ.get("ETH_ANALYZER_RPC_URL"))
     t.add_argument("--block", default="latest")
     t.add_argument("--output", default="treasury.json")
+    ta = sub.add_parser("treasury-audit", help="Build a read-only historical treasury security/evidence report")
+    ta.add_argument("--address", default=TREASURY)
+    ta.add_argument("--rpc-url", default=os.environ.get("ETH_ANALYZER_RPC_URL"))
+    ta.add_argument("--from-block", required=True)
+    ta.add_argument("--to-block", required=True)
+    ta.add_argument("--output", default="treasury-audit.json")
     x = sub.add_parser("transaction")
     x.add_argument("tx_hash")
     x.add_argument("--rpc-url", default=os.environ.get("ETH_ANALYZER_RPC_URL"))
@@ -46,6 +53,11 @@ def main(argv=None):
         block = validate_block_identifier(args.block)
         snapshot = collect_treasury(eth, address, block=block)
         write_snapshot(snapshot, args.output)
+        print(args.output)
+    elif args.command == "treasury-audit":
+        address = validate_address(args.address)
+        audit = collect_treasury_audit(eth, address, args.from_block, args.to_block)
+        write_treasury_audit(audit, args.output)
         print(args.output)
     elif args.command == "transaction":
         snapshot = collect_transaction(eth, args.tx_hash)
