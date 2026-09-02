@@ -5,6 +5,7 @@ from pathlib import Path
 from .contract import collect_contract, validate_address, validate_block_identifier
 from .rpc import JsonRpcClient, EthRpc
 from .treasury import TREASURY, collect_treasury, write_snapshot
+from .transaction import collect_transaction, write_transaction
 
 
 def build_parser():
@@ -20,6 +21,10 @@ def build_parser():
     t.add_argument("--rpc-url", default=os.environ.get("ETH_ANALYZER_RPC_URL"))
     t.add_argument("--block", default="latest")
     t.add_argument("--output", default="treasury.json")
+    x = sub.add_parser("transaction")
+    x.add_argument("tx_hash")
+    x.add_argument("--rpc-url", default=os.environ.get("ETH_ANALYZER_RPC_URL"))
+    x.add_argument("--output", default="transaction.json")
     return p
 
 
@@ -41,5 +46,9 @@ def main(argv=None):
         block = validate_block_identifier(args.block)
         snapshot = collect_treasury(eth, address, block=block)
         write_snapshot(snapshot, args.output)
+        print(args.output)
+    elif args.command == "transaction":
+        snapshot = collect_transaction(eth, args.tx_hash)
+        write_transaction(snapshot, args.output)
         print(args.output)
     return 0
